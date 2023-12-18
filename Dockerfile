@@ -1,1 +1,31 @@
-
+pipeline {
+  agent any
+  options {
+    disableConcurrentBuilds()
+    disableResume()
+    buildDiscarder(logRotator(numToKeepStr: '10'))
+    timeout(time: 1, unit: 'HOURS')
+  }
+  tools {
+    maven 'maven-3.6.3' 
+  }
+  stages {
+    stage ('Build') {
+      steps {
+        sh 'mvn clean package'
+      }
+    }
+    stage ('Deploy') {
+      steps {
+        script {
+          deploy adapters: [tomcat9(credentialsId: 'tomcat_credential', path: '', url: 'http://10.101.104.21:8080')], contextPath: '/deva', onFailure: false, war: 'target/*.war' 
+        }
+      }
+    }
+  }
+  post {
+    always {
+      deleteDir()
+    }
+  }
+}
